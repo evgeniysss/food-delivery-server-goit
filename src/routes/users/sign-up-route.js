@@ -1,42 +1,70 @@
-const qs = require("querystring");
 const fs = require("fs");
 const path = require("path");
 
 const saveUser = user => {
-  // получить файл с юзером
-  // найти путь папки users
-  // сохранить туда файл
+  const userName = user.username;
+  const fileUser = path.join(
+    __dirname,
+    "../../",
+    "db",
+    "/users",
+    `${userName}.json`
+  );
+  fs.writeFile(fileUser, JSON.stringify(user), function(err) {
+    if (err) throw err;
+    console.log(`${userName}.json was created`);
+  });
+};
+
+const checkUser = user => {
+  const userName = user.username;
+  const userPhone = user.telephone.replace(/\s/g, "");
+  const userPass = user.password;
+  const userEmail = user.email;
+  if (
+    typeof userName === "string" &&
+    !isNaN(Number(userPhone)) &&
+    typeof userPass === "string" &&
+    typeof userEmail === "string"
+  )
+    return true;
+  else return false;
 };
 
 const signUpRoute = (request, response) => {
   if (request.method === "POST") {
     let body = "";
-    console.log(request);
-    request.on("data", function(data) {
-      body += data;
 
+    request.on("data", function(data) {
+      body = body + data;
       console.log("Incoming data!!!!");
-      console.log(body);
     });
 
     request.on("end", function() {
-      let userData = JSON.parse(body);
-      const { username } = userData;
+      const user = JSON.parse(body);
+      if (checkUser(user)) {
+        saveUser(user);
+        const success = {
+          status: "success",
+          user: user
+        };
 
-      console.log(username);
+        response.writeHead(200, {
+          "Content-type": "application/json"
+        });
+        response.write(JSON.stringify(success));
+        response.end();
+      } else {
+        const error = {
+          status: "error"
+        };
 
-      fs.writeFile(
-        path.join(__dirname, "../../db/users/", `${username}.json`),
-        body,
-        err => {
-          if (err) throw err;
-
-          console.log("The file has been created!");
-        }
-      );
-      response.writeHead(200, { "Content-Type": "application/json" });
-      response.write(JSON.stringify({ user: userData, status: "success" }));
-      response.end();
+        response.writeHead(403, {
+          "Content-type": "application/json"
+        });
+        response.write(JSON.stringify(error));
+        response.end();
+      }
     });
   }
 };

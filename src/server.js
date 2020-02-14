@@ -17,7 +17,10 @@ const startServer = port => {
     logger(request, response, () => func(request, response));
   });
 
-  server.listen(port);
+  server.listen(port, () => {
+    console.log("☆☆☆ Server ready to accept requests on port:", port, "☆☆☆");
+  });
+  // console.log("☆☆☆ Server ready to accept requests on port:", port, "☆☆☆");
 };
 
 module.exports = startServer;
