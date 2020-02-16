@@ -10,10 +10,22 @@ const saveUser = user => {
     "/users",
     `${userName}.json`
   );
+
   fs.writeFile(fileUser, JSON.stringify(user), function(err) {
     if (err) throw err;
-    console.log(`${userName}.json was created`);
+    console.log(`New ${userName}.json was created`);
   });
+
+  // fs.access(fileUser, function(error) {
+  //   if (error) {
+  //     fs.writeFile(fileUser, JSON.stringify(user), function(err) {
+  //       if (err) throw err;
+  //       console.log(`New ${userName}.json was created`);
+  //     });
+  //   } else {
+  //     console.log("Username already exists! Choose another one and try again!");
+  //   }
+  // });
 };
 
 const checkUser = user => {
@@ -43,7 +55,23 @@ const signUpRoute = (request, response) => {
     request.on("end", function() {
       const user = JSON.parse(body);
       if (checkUser(user)) {
-        saveUser(user);
+        const fileUser = path.join(
+          __dirname,
+          "../../",
+          "db",
+          "/users",
+          `${user.username}.json`
+        );
+
+        fs.stat(fileUser, function(err, stat) {
+          if (err == null) {
+            console.log("Error! User already exists!");
+          } else if (err.code == "ENOENT") {
+            saveUser(user);
+            console.log("New user registered");
+          }
+        });
+
         const success = {
           status: "success",
           user: user
@@ -59,7 +87,7 @@ const signUpRoute = (request, response) => {
           status: "error"
         };
 
-        response.writeHead(403, {
+        response.writeHead(400, {
           "Content-type": "application/json"
         });
         response.write(JSON.stringify(error));
